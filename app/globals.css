@@ -5,15 +5,26 @@
   --font-display: var(--font-display);
 }
 
-:root {
-  --background: #ffffff;
-  --foreground: #000000;
+@layer base {
+  body {
+    @apply bg-white text-black antialiased;
+    font-family: var(--font-sans), sans-serif;
+  }
 }
 
-body {
-  font-family: var(--font-sans), sans-serif;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display), sans-serif;
+@layer utilities {
+  /* Minimalist Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-white;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-200;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-zinc-300;
+  }
 }

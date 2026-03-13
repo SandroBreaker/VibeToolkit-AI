@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import ReactMarkdown from 'react-markdown';
 import { 
   Upload, 
   FileCode, 
@@ -194,12 +195,12 @@ export default function VibeToolkit() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8 font-sans">
+    <div className="max-w-6xl mx-auto p-6 space-y-8 font-sans text-zinc-100">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b-2 border-black pb-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b-2 border-white pb-6">
         <div>
-          <h1 className="text-6xl font-black tracking-tighter uppercase leading-none">
-            Vibe<span className="text-emerald-500">Toolkit</span>
+          <h1 className="text-6xl font-black tracking-tighter uppercase leading-none text-white">
+            Vibe<span className="text-emerald-400">Toolkit</span>
           </h1>
           <p className="mt-2 text-zinc-500 font-mono text-sm uppercase tracking-widest">
             Contextualizador de Projetos para IA v1.0
@@ -210,7 +211,7 @@ export default function VibeToolkit() {
           <div className="relative">
             <button 
               onClick={() => setShowSettings(!showSettings)}
-              className={`p-3 border-2 border-black transition-all ${showSettings ? 'bg-black text-white' : 'hover:bg-zinc-100'}`}
+              className={`p-3 border-2 border-white transition-all ${showSettings ? 'bg-white text-black' : 'hover:bg-zinc-900'}`}
               title="Configurações de API"
             >
               <Settings className="w-6 h-6" />
@@ -222,21 +223,21 @@ export default function VibeToolkit() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-80 bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 z-50"
+                  className="absolute right-0 mt-2 w-80 bg-black border-2 border-white shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)] p-6 z-50"
                 >
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 border-b border-zinc-100 pb-2">
-                      <Settings className="w-4 h-4 text-emerald-500" />
-                      <h4 className="font-black text-xs uppercase tracking-widest">Configurações de IA</h4>
+                    <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+                      <Settings className="w-4 h-4 text-emerald-400" />
+                      <h4 className="font-black text-xs uppercase tracking-widest text-white">Configurações de IA</h4>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase text-zinc-400">Provedor</label>
+                      <label className="text-[10px] font-bold uppercase text-zinc-500">Provedor</label>
                       <div className="grid grid-cols-2 gap-2">
                         <button 
                           onClick={() => saveProvider('gemini')}
                           className={`p-2 text-[10px] font-bold uppercase border-2 transition-all ${
-                            provider === 'gemini' ? 'border-black bg-black text-white' : 'border-zinc-200 hover:border-black'
+                            provider === 'gemini' ? 'border-emerald-400 bg-emerald-400 text-black' : 'border-zinc-800 hover:border-white'
                           }`}
                         >
                           Gemini
@@ -244,7 +245,7 @@ export default function VibeToolkit() {
                         <button 
                           onClick={() => saveProvider('groq')}
                           className={`p-2 text-[10px] font-bold uppercase border-2 transition-all ${
-                            provider === 'groq' ? 'border-black bg-black text-white' : 'border-zinc-200 hover:border-black'
+                            provider === 'groq' ? 'border-emerald-400 bg-emerald-400 text-black' : 'border-zinc-800 hover:border-white'
                           }`}
                         >
                           Groq (Llama)
@@ -255,39 +256,39 @@ export default function VibeToolkit() {
                     {provider === 'gemini' ? (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <Key className="w-3 h-3 text-emerald-500" />
-                          <label className="text-[10px] font-bold uppercase text-zinc-400">Gemini API Key</label>
+                          <Key className="w-3 h-3 text-emerald-400" />
+                          <label className="text-[10px] font-bold uppercase text-zinc-500">Gemini API Key</label>
                         </div>
                         <input 
                           type="password"
                           value={customApiKey}
                           onChange={(e) => saveApiKey(e.target.value)}
                           placeholder="AIza..."
-                          className="w-full p-3 bg-zinc-50 border border-zinc-200 font-mono text-xs focus:outline-none focus:border-black transition-colors"
+                          className="w-full p-3 bg-zinc-900 border border-zinc-800 font-mono text-xs focus:outline-none focus:border-emerald-400 transition-colors text-white"
                         />
                       </div>
                     ) : (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <Key className="w-3 h-3 text-orange-500" />
-                          <label className="text-[10px] font-bold uppercase text-zinc-400">Groq API Key</label>
+                          <Key className="w-3 h-3 text-orange-400" />
+                          <label className="text-[10px] font-bold uppercase text-zinc-500">Groq API Key</label>
                         </div>
                         <input 
                           type="password"
                           value={customGroqApiKey}
                           onChange={(e) => saveGroqApiKey(e.target.value)}
                           placeholder="gsk_..."
-                          className="w-full p-3 bg-zinc-50 border border-zinc-200 font-mono text-xs focus:outline-none focus:border-black transition-colors"
+                          className="w-full p-3 bg-zinc-900 border border-zinc-800 font-mono text-xs focus:outline-none focus:border-orange-400 transition-colors text-white"
                         />
                       </div>
                     )}
 
-                    <div className="flex justify-between items-center pt-2 border-t border-zinc-100">
-                      <span className="text-[10px] font-bold uppercase text-zinc-400">Status:</span>
+                    <div className="flex justify-between items-center pt-2 border-t border-zinc-800">
+                      <span className="text-[10px] font-bold uppercase text-zinc-500">Status:</span>
                       <span className={`text-[10px] font-bold uppercase ${
                         (provider === 'gemini' && customApiKey) || (provider === 'groq' && customGroqApiKey) 
-                          ? 'text-emerald-500' 
-                          : 'text-zinc-400'
+                          ? 'text-emerald-400' 
+                          : 'text-zinc-500'
                       }`}>
                         {(provider === 'gemini' && customApiKey) || (provider === 'groq' && customGroqApiKey) 
                           ? 'Customizada' 
@@ -302,7 +303,7 @@ export default function VibeToolkit() {
 
           <a 
             href="https://github.com/SandroBreaker/VibeToolkit/archive/refs/heads/main.zip"
-            className="px-6 py-3 border-2 border-black font-bold hover:bg-zinc-100 transition-all flex items-center gap-2 text-sm uppercase tracking-tighter"
+            className="px-6 py-3 border-2 border-white font-bold hover:bg-zinc-900 transition-all flex items-center gap-2 text-sm uppercase tracking-tighter"
             title="Baixar para rodar local"
           >
             <Download className="w-5 h-5" />
@@ -312,7 +313,7 @@ export default function VibeToolkit() {
           {!blueprint ? (
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="group relative px-8 py-4 bg-black text-white font-bold text-lg hover:bg-emerald-600 transition-colors flex items-center gap-3 overflow-hidden"
+              className="group relative px-8 py-4 bg-white text-black font-bold text-lg hover:bg-emerald-400 transition-colors flex items-center gap-3 overflow-hidden"
             >
               <FolderOpen className="w-6 h-6" />
               SELECIONAR PASTA
@@ -327,7 +328,7 @@ export default function VibeToolkit() {
           ) : (
             <button 
               onClick={reset}
-              className="px-6 py-3 border-2 border-black font-bold hover:bg-black hover:text-white transition-all flex items-center gap-2"
+              className="px-6 py-3 border-2 border-white font-bold hover:bg-white hover:text-black transition-all flex items-center gap-2"
             >
               <X className="w-5 h-5" />
               LIMPAR
@@ -357,16 +358,16 @@ export default function VibeToolkit() {
           >
             {/* Sidebar Stats */}
             <div className="lg:col-span-3 space-y-6">
-              <div className="p-6 bg-zinc-100 border-2 border-black space-y-4">
-                <h3 className="font-black text-xs uppercase tracking-tighter border-b border-black/10 pb-2">Status do Projeto</h3>
+              <div className="p-6 bg-zinc-900 border-2 border-white space-y-4">
+                <h3 className="font-black text-xs uppercase tracking-tighter border-b border-zinc-800 pb-2 text-zinc-400">Status do Projeto</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-mono text-zinc-500">Arquivos:</span>
-                    <span className="font-bold">{files.length}</span>
+                    <span className="font-bold text-white">{files.length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-mono text-zinc-500">Tokens Est.:</span>
-                    <span className="font-bold">{Math.round(blueprint.length / 4)}</span>
+                    <span className="font-bold text-white">{Math.round(blueprint.length / 4)}</span>
                   </div>
                 </div>
               </div>
@@ -374,10 +375,10 @@ export default function VibeToolkit() {
               <button 
                 onClick={generateAIContext}
                 disabled={isGeneratingAI || !!mentorContext}
-                className={`w-full p-6 flex flex-col items-center gap-3 border-2 border-black transition-all ${
+                className={`w-full p-6 flex flex-col items-center gap-3 border-2 border-white transition-all ${
                   mentorContext 
-                    ? 'bg-zinc-100 text-zinc-400 cursor-default' 
-                    : 'bg-emerald-500 text-black hover:bg-emerald-400 font-bold'
+                    ? 'bg-zinc-900 text-zinc-600 cursor-default' 
+                    : 'bg-emerald-400 text-black hover:bg-emerald-300 font-bold'
                 }`}
               >
                 {isGeneratingAI ? (
@@ -394,9 +395,9 @@ export default function VibeToolkit() {
 
               <button 
                 onClick={copyToClipboard}
-                className="w-full p-6 bg-black text-white flex flex-col items-center gap-3 border-2 border-black hover:bg-zinc-800 transition-all font-bold"
+                className="w-full p-6 bg-white text-black flex flex-col items-center gap-3 border-2 border-white hover:bg-zinc-100 transition-all font-bold"
               >
-                {copied ? <Check className="w-8 h-8 text-emerald-400" /> : <Copy className="w-8 h-8" />}
+                {copied ? <Check className="w-8 h-8 text-emerald-600" /> : <Copy className="w-8 h-8" />}
                 <span className="text-sm uppercase tracking-tighter">
                   {copied ? 'Copiado!' : 'Copiar Contexto'}
                 </span>
@@ -410,29 +411,33 @@ export default function VibeToolkit() {
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="p-8 bg-emerald-50 border-2 border-emerald-500 relative overflow-hidden"
+                  className="p-8 bg-zinc-900 border-2 border-emerald-500/50 relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 p-2 bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest">
                     AI Mentor Feedback
                   </div>
-                  <div className="prose prose-emerald max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tighter">
-                    <div className="whitespace-pre-wrap font-sans text-emerald-900 leading-relaxed">
-                      {mentorContext}
+                  <div className="prose prose-invert prose-emerald max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tighter">
+                    <div className="font-sans text-zinc-300 leading-relaxed">
+                      <ReactMarkdown>
+                        {mentorContext}
+                      </ReactMarkdown>
                     </div>
                   </div>
                 </motion.div>
               )}
 
               {/* Blueprint Preview */}
-              <div className="border-2 border-black">
-                <div className="bg-black text-white px-4 py-2 flex justify-between items-center">
+              <div className="border-2 border-white">
+                <div className="bg-white text-black px-4 py-2 flex justify-between items-center">
                   <span className="font-mono text-xs uppercase tracking-widest">Blueprint Preview</span>
                   <Terminal className="w-4 h-4" />
                 </div>
-                <div className="p-6 bg-white max-h-[600px] overflow-y-auto font-mono text-sm">
-                  <pre className="whitespace-pre-wrap text-zinc-700">
-                    {blueprint}
-                  </pre>
+                <div className="p-6 bg-zinc-900 max-h-[600px] overflow-y-auto">
+                  <div className="prose prose-invert prose-zinc max-w-none prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800 prose-headings:text-white prose-strong:text-emerald-400">
+                    <ReactMarkdown>
+                      {blueprint}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
             </div>
@@ -442,11 +447,11 @@ export default function VibeToolkit() {
 
       {!blueprint && !isProcessing && (
         <div className="py-20 flex flex-col items-center justify-center text-center space-y-6">
-          <div className="p-8 bg-zinc-100 rounded-full border-2 border-dashed border-zinc-300">
-            <Upload className="w-16 h-16 text-zinc-300" />
+          <div className="p-8 bg-zinc-900 rounded-full border-2 border-dashed border-zinc-800">
+            <Upload className="w-16 h-16 text-zinc-700" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-black uppercase tracking-tighter">Pronto para o Vibe-Coding?</h2>
+            <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Pronto para o Vibe-Coding?</h2>
             <p className="text-zinc-500 max-w-md mx-auto">
               Selecione a pasta do seu projeto. Vamos organizar tudo para que sua IA favorita entenda cada detalhe da sua arquitetura.
             </p>
