@@ -638,7 +638,7 @@ export default function VibeToolkit() {
               </button>
 
               <button 
-                onClick={copyToClipboard}
+                onClick={() => copyToClipboard()}
                 className="w-full p-6 bg-white text-black flex flex-col items-center gap-3 border-2 border-white hover:bg-zinc-100 transition-all font-bold"
               >
                 {copied ? <Check className="w-8 h-8 text-emerald-600" /> : <Copy className="w-8 h-8" />}
