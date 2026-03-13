@@ -25,6 +25,7 @@ import {
   isRelevantFile, 
   readFileContent, 
   generateBlueprint,
+  generateSmartBlueprint,
   getExtension 
 } from '@/lib/bundler';
 
@@ -46,6 +47,7 @@ export default function VibeToolkit() {
   const [files, setFiles] = useState<FileData[]>([]);
   const [projectName, setProjectName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [mode, setMode] = useState<'full' | 'smart'>('full');
   const [blueprint, setBlueprint] = useState('');
   const [mentorContext, setMentorContext] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
@@ -111,9 +113,21 @@ export default function VibeToolkit() {
     setProjectName(name);
     setIsProcessing(false);
     
-    const generated = generateBlueprint(relevantFiles, name);
+    const generated = mode === 'full' 
+      ? generateBlueprint(relevantFiles, name)
+      : generateSmartBlueprint(relevantFiles, name);
     setBlueprint(generated);
   };
+
+  // Regenerate blueprint when mode changes
+  React.useEffect(() => {
+    if (files.length > 0 && projectName) {
+      const generated = mode === 'full' 
+        ? generateBlueprint(files, projectName)
+        : generateSmartBlueprint(files, projectName);
+      setBlueprint(generated);
+    }
+  }, [mode, files, projectName]);
 
   const generateAIContext = async () => {
     if (!blueprint) return;
@@ -369,6 +383,28 @@ export default function VibeToolkit() {
                     <span className="text-xs font-mono text-zinc-500">Tokens Est.:</span>
                     <span className="font-bold text-white">{Math.round(blueprint.length / 4)}</span>
                   </div>
+                </div>
+              </div>
+
+              <div className="p-6 bg-zinc-900 border-2 border-white space-y-4">
+                <h3 className="font-black text-xs uppercase tracking-tighter border-b border-zinc-800 pb-2 text-zinc-400">Modo de Coleta</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  <button 
+                    onClick={() => setMode('full')}
+                    className={`p-3 text-xs font-bold uppercase border-2 transition-all ${
+                      mode === 'full' ? 'border-emerald-400 bg-emerald-400 text-black' : 'border-zinc-800 hover:border-white text-zinc-400'
+                    }`}
+                  >
+                    Copiar Tudo
+                  </button>
+                  <button 
+                    onClick={() => setMode('smart')}
+                    className={`p-3 text-xs font-bold uppercase border-2 transition-all ${
+                      mode === 'smart' ? 'border-emerald-400 bg-emerald-400 text-black' : 'border-zinc-800 hover:border-white text-zinc-400'
+                    }`}
+                  >
+                    Inteligente (Contratos)
+                  </button>
                 </div>
               </div>
 
