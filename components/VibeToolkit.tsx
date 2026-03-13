@@ -3,6 +3,8 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { 
   Upload, 
   FileCode, 
@@ -17,7 +19,8 @@ import {
   X,
   Download,
   Settings,
-  Key
+  Key,
+  Eye
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { 
@@ -52,6 +55,7 @@ export default function VibeToolkit() {
   const [mentorContext, setMentorContext] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [customApiKey, setCustomApiKey] = useState('');
   const [customGroqApiKey, setCustomGroqApiKey] = useState('');
   const [provider, setProvider] = useState<'gemini' | 'groq'>('gemini');
@@ -183,14 +187,20 @@ export default function VibeToolkit() {
     }
   };
 
-  const copyToClipboard = () => {
-    const fullText = mentorContext 
+  const copyToClipboard = (text?: string, id: string = 'main') => {
+    const fullText = text || (mentorContext 
       ? `> # CONTEXTO DO PROJETO\n${mentorContext}\n\n---\n\n# ESTRUTURA E CÓDIGO\n${blueprint}`
-      : blueprint;
+      : blueprint);
     
     navigator.clipboard.writeText(fullText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    
+    if (id === 'main') {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
 
   const reset = () => {
@@ -444,12 +454,56 @@ export default function VibeToolkit() {
                   <div className="absolute top-0 right-0 p-2 bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest">
                     AI Mentor Feedback
                   </div>
-                  <div className="prose prose-invert prose-emerald max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tighter">
-                    <div className="font-sans text-zinc-300 leading-relaxed">
-                      <ReactMarkdown>
-                        {mentorContext}
-                      </ReactMarkdown>
-                    </div>
+                  <div className="prose prose-invert max-w-none 
+                    prose-headings:text-white prose-headings:font-bold prose-headings:border-b prose-headings:border-zinc-800 prose-headings:pb-2 prose-headings:mt-8 first:prose-headings:mt-0
+                    prose-p:text-zinc-300 prose-p:my-4
+                    prose-ul:list-disc prose-ol:list-decimal">
+                    <ReactMarkdown
+                      components={{
+                        h1: ({node, ...props}) => <h1 className="text-2xl mb-4 border-b border-zinc-800 pb-2" {...props} />,
+                        h2: ({node, ...props}) => <h2 className="text-xl mb-4 border-b border-zinc-800 pb-2 mt-8" {...props} />,
+                        code({node, inline, className, children, ...props}: any) {
+                          const match = /language-(\w+)/.exec(className || '');
+                          const codeContent = String(children).replace(/\n$/, '');
+                          const codeId = Math.random().toString(36).substring(2, 9);
+
+                          return !inline && match ? (
+                            <div className="relative group my-4 rounded-md overflow-hidden border border-zinc-800 bg-[#0d1117]">
+                              <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-zinc-800">
+                                <span className="text-xs font-mono text-zinc-400">{match[1]}</span>
+                                <button
+                                  onClick={() => copyToClipboard(codeContent, codeId)}
+                                  className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors text-zinc-400 hover:text-white"
+                                >
+                                  {copiedId === codeId ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                              </div>
+                              <SyntaxHighlighter
+                                style={vscDarkPlus}
+                                language={match[1]}
+                                PreTag="div"
+                                customStyle={{
+                                  margin: 0,
+                                  padding: '1rem',
+                                  background: 'transparent',
+                                  fontSize: '0.85rem',
+                                  lineHeight: '1.5',
+                                }}
+                                {...props}
+                              >
+                                {codeContent}
+                              </SyntaxHighlighter>
+                            </div>
+                          ) : (
+                            <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-emerald-400 font-mono text-sm" {...props}>
+                              {children}
+                            </code>
+                          );
+                        }
+                      }}
+                    >
+                      {mentorContext}
+                    </ReactMarkdown>
                   </div>
                 </motion.div>
               )}
@@ -460,15 +514,57 @@ export default function VibeToolkit() {
                   <span className="font-mono text-xs uppercase tracking-widest">Blueprint Preview</span>
                   <Terminal className="w-4 h-4" />
                 </div>
-                <div className="p-6 bg-zinc-900 max-h-[600px] overflow-y-auto custom-scrollbar">
-                  <div className="prose prose-invert prose-emerald max-w-none 
-                    prose-headings:text-white prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tighter
-                    prose-p:text-zinc-400 prose-p:leading-relaxed
-                    prose-pre:bg-black prose-pre:border prose-pre:border-white/10 prose-pre:rounded-none prose-pre:p-4
-                    prose-code:text-emerald-400 prose-code:font-mono prose-code:bg-zinc-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-sm
-                    prose-strong:text-white prose-a:text-emerald-400 hover:prose-a:text-emerald-300
+                <div className="p-6 bg-zinc-900 max-h-[800px] overflow-y-auto custom-scrollbar">
+                  <div className="prose prose-invert max-w-none 
+                    prose-headings:text-white prose-headings:font-bold prose-headings:border-b prose-headings:border-zinc-800 prose-headings:pb-2 prose-headings:mt-8 first:prose-headings:mt-0
+                    prose-p:text-zinc-300 prose-p:my-4
+                    prose-hr:border-zinc-800
                     prose-ul:list-disc prose-ol:list-decimal">
-                    <ReactMarkdown>
+                    <ReactMarkdown
+                      components={{
+                        h1: ({node, ...props}) => <h1 className="text-2xl mb-4 border-b border-zinc-800 pb-2" {...props} />,
+                        h2: ({node, ...props}) => <h2 className="text-xl mb-4 border-b border-zinc-800 pb-2 mt-8" {...props} />,
+                        code({node, inline, className, children, ...props}: any) {
+                          const match = /language-(\w+)/.exec(className || '');
+                          const codeContent = String(children).replace(/\n$/, '');
+                          const codeId = Math.random().toString(36).substring(2, 9);
+
+                          return !inline && match ? (
+                            <div className="relative group my-4 rounded-md overflow-hidden border border-zinc-800 bg-[#0d1117]">
+                              <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-zinc-800">
+                                <span className="text-xs font-mono text-zinc-400">{match[1]}</span>
+                                <button
+                                  onClick={() => copyToClipboard(codeContent, codeId)}
+                                  className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors text-zinc-400 hover:text-white"
+                                  title="Copy code"
+                                >
+                                  {copiedId === codeId ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                              </div>
+                              <SyntaxHighlighter
+                                style={vscDarkPlus}
+                                language={match[1]}
+                                PreTag="div"
+                                customStyle={{
+                                  margin: 0,
+                                  padding: '1rem',
+                                  background: 'transparent',
+                                  fontSize: '0.85rem',
+                                  lineHeight: '1.5',
+                                }}
+                                {...props}
+                              >
+                                {codeContent}
+                              </SyntaxHighlighter>
+                            </div>
+                          ) : (
+                            <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-emerald-400 font-mono text-sm" {...props}>
+                              {children}
+                            </code>
+                          );
+                        }
+                      }}
+                    >
                       {blueprint}
                     </ReactMarkdown>
                   </div>
