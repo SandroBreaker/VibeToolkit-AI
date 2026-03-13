@@ -152,36 +152,28 @@ export default function VibeToolkit() {
 
         setMentorContext(response.text || 'Falha ao gerar contexto.');
       } else {
-        // Groq Implementation
-        const apiKey = customGroqApiKey || process.env.NEXT_PUBLIC_GROQ_API_KEY;
-
-        if (!apiKey) {
-          throw new Error('API Key do Groq não encontrada. Configure-a no painel de configurações.');
-        }
-
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        // Groq Implementation via Server API
+        const response = await fetch('/api/mentor', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              { role: "system", content: SYSTEM_PROMPT },
-              { role: "user", content: `Analise este projeto '${projectName}':\n\n${blueprint}` }
-            ],
-            temperature: 0.7,
+            provider: 'groq',
+            blueprint,
+            projectName,
+            customApiKey: customGroqApiKey,
+            systemPrompt: SYSTEM_PROMPT
           }),
         });
 
+        const data = await response.json();
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error?.message || 'Erro ao consultar Groq');
+          throw new Error(data.error || 'Erro ao consultar o Mentor IA');
         }
 
-        const data = await response.json();
-        setMentorContext(data.choices[0]?.message?.content || 'Falha ao gerar contexto.');
+        setMentorContext(data.text || 'Falha ao gerar contexto.');
       }
     } catch (error: any) {
       console.error('Erro na IA:', error);
@@ -468,8 +460,14 @@ export default function VibeToolkit() {
                   <span className="font-mono text-xs uppercase tracking-widest">Blueprint Preview</span>
                   <Terminal className="w-4 h-4" />
                 </div>
-                <div className="p-6 bg-zinc-900 max-h-[600px] overflow-y-auto">
-                  <div className="prose prose-invert prose-zinc max-w-none prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800 prose-headings:text-white prose-strong:text-emerald-400">
+                <div className="p-6 bg-zinc-900 max-h-[600px] overflow-y-auto custom-scrollbar">
+                  <div className="prose prose-invert prose-emerald max-w-none 
+                    prose-headings:text-white prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tighter
+                    prose-p:text-zinc-400 prose-p:leading-relaxed
+                    prose-pre:bg-black prose-pre:border prose-pre:border-white/10 prose-pre:rounded-none prose-pre:p-4
+                    prose-code:text-emerald-400 prose-code:font-mono prose-code:bg-zinc-800/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-sm
+                    prose-strong:text-white prose-a:text-emerald-400 hover:prose-a:text-emerald-300
+                    prose-ul:list-disc prose-ol:list-decimal">
                     <ReactMarkdown>
                       {blueprint}
                     </ReactMarkdown>
