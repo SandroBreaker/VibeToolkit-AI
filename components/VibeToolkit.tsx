@@ -23,6 +23,8 @@ import {
   Eye
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { 
   FileData, 
   isRelevantFile, 
@@ -46,6 +48,200 @@ Entregue o seguinte conteúdo em Markdown:
 Use uma linguagem amigável, direta e cheia de energia positiva (use emojis). Não crie explicações longas ou código novo agora.
 `;
 
+const TOOLKIT_FILES = [
+  {
+    name: 'groq-agent.ts',
+    content: `import Groq from "groq-sdk";
+import * as dotenv from "dotenv";
+import { promises as fs } from "fs";
+import * as path from "path";
+
+dotenv.config({ path: path.resolve(__dirname, ".env") });
+
+interface GroqRequestParams {
+    model: string;
+    systemContent: string;
+    userPrompt: string;
+    temperature?: number;
+    maxTokens?: number;
+}
+
+const logger = {
+    info: (message: string) => {
+        console.log(\`[AI] \${message}\`);
+    },
+    error: (message: string, error?: any) => {
+        console.error(\`[!] ERRO: \${message}\`);
+        if (error) {
+            if (error.status === 401) {
+                console.error("    Sua chave da Groq falhou. Verifique o arquivo .env.");
+                console.error("    Dica: Acesse console.groq.com, crie uma nova chave e cole lá.");
+            }
+            else if (error.status === 429) {
+                console.error("    O limite de uso gratuito da Groq foi atingido. Tente novamente em alguns minutos.");
+            }
+            else {
+                console.error(\`    Detalhes técnicos: \${error.message || error}\`);
+            }
+        }
+    }
+};
+
+const SYSTEM_PROMPT = \`
+Você é um "Mentor de Vibe-Coding Senior". 
+Sua tarefa é analisar o código do projeto enviado e gerar um documento de contexto que ajude o usuário (provavelmente um iniciante) a continuar desenvolvendo.
+
+Entregue o seguinte conteúdo em Markdown:
+1. **Resumo Executivo:** O que o projeto faz de forma simples e "cool".
+2. **Mapa de Vibe:** Quais tecnologias estão sendo usadas e por que elas são boas.
+3. **Próximos Passos:** Sugira 3 funcionalidades ou melhorias que o usuário poderia fazer a seguir para evoluir o projeto.
+4. **Alerta de Mentor:** Identifique algum "code smell" ou algo que possa ser melhorado na estrutura atual.
+5. **Prompt Sugerido:** Um prompt pronto que o usuário pode colar no chat para pedir a primeira melhoria.
+
+Use uma linguagem amigável, direta e cheia de energia positiva (use emojis). Não crie explicações longas ou código novo agora.
+\`;
+
+class GroqService {
+    private client: Groq;
+    constructor() {
+        this.client = new Groq({ apiKey: process.env.GROQ_API_KEY || "MISSING_KEY" });
+    }
+
+    public async generateContextDocument(params: GroqRequestParams): Promise<string | null> {
+        try {
+            const response = await this.client.chat.completions.create({
+                messages: [{ role: "system", content: params.systemContent }, { role: "user", content: params.userPrompt }],
+                model: params.model,
+                temperature: 0.1,
+            });
+            return response.choices[0]?.message?.content || null;
+        } catch (error) {
+            logger.error("Falha na API Groq", error);
+            return null;
+        }
+    }
+}
+
+async function main() {
+    if (!process.env.GROQ_API_KEY) {
+        logger.error("Ops! Não achamos a sua chave da API da Groq no arquivo .env");
+        process.exit(1);
+    }
+
+    const [bundlePath, projectName] = process.argv.slice(2);
+    if (!bundlePath) process.exit(1);
+
+    const absolutePath = path.resolve(process.cwd(), bundlePath);
+    let sourceCodeDump = await fs.readFile(absolutePath, "utf-8");
+
+    sourceCodeDump = sourceCodeDump.replace(/<system_instruction>[\\s\\S]*?<\\/system_instruction>/g, "").trim();
+
+    const groqService = new GroqService();
+    const result = await groqService.generateContextDocument({
+        model: "llama-3.3-70b-versatile",
+        systemContent: SYSTEM_PROMPT,
+        userPrompt: \`Analise este projeto '\${projectName}':\\n\\n\${sourceCodeDump}\`,
+    });
+
+    if (result) {
+        const outputPath = path.resolve(path.dirname(absolutePath), \`_AI_CONTEXT_\${projectName}.md\`);
+        const instructionalHeader = \`> # CONTEXTO DO PROJETO\\n\`;
+        const finalFile = \`\${instructionalHeader}\${result.trim()}\\n\\n---\\n\\n# ESTRUTURA E CÓDIGO (REFERÊNCIA TÉCNICA)\\n\${sourceCodeDump}\`;
+        await fs.writeFile(outputPath, finalFile, "utf-8");
+        logger.info("Resumo criado com sucesso e pronto para uso.");
+    }
+}
+
+main();`
+  },
+  {
+    name: 'package.json',
+    content: `{
+  "name": "vibetoolkit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \\"Error: no test specified\\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "groq-sdk": "^0.37.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}`
+  },
+  {
+    name: 'project-bundler.ps1',
+    content: `# VIBE AI TOOLKIT - BUNDLER, BLUEPRINT & SELECTIVE
+# =================================================================
+
+[CmdletBinding()]
+param([string]$Path = ".")
+
+# Força o console a usar UTF-8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Set-Location $Path
+
+$ProjectName = (Get-Item .).Name
+$ScriptFullPath = $MyInvocation.MyCommand.Path
+$ToolkitDir = Split-Path $ScriptFullPath
+
+# ... (rest of the script)
+`
+  },
+  {
+    name: 'README.md',
+    content: `# ⚡ VibeToolkit: Domine o Vibe-Coding com Contexto Real
+
+O **VibeToolkit** é o seu parceiro definitivo para programar com IAs (ChatGPT, Claude, Gemini). Ele elimina a "amnésia" dos modelos, consolidando seu projeto em um **Blueprint Inteligente** que permite à IA entender sua arquitetura, tecnologias e lógica instantaneamente.
+
+---
+
+## ✨ Recursos Mágicos
+
+*   **🔍 Mapeamento Inteligente:** Varre suas pastas ignorando o lixo (\`node_modules\`, \`dist\`, etc) e focando no que importa.
+*   **🧠 Mentor de Código:** Utiliza IA (via Groq) para escrever um resumo didático do seu projeto no topo do arquivo.
+*   **🖱️ Integração Nativa:** Clique com o botão direito em qualquer pasta e gere seu contexto em segundos.
+*   **📋 Auto-Copy:** Tudo o que a IA precisa já vai direto para a sua área de transferência. Paste & Go!
+`
+  },
+  {
+    name: 'setup-menu.ps1',
+    content: `# =================================================================
+# VibeToolkit - Context Menu & Environment Auto-Installer
+# =================================================================
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# ... (rest of the script)
+`
+  },
+  {
+    name: 'tsconfig.json',
+    content: `{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist"
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}`
+  }
+];
+
 export default function VibeToolkit() {
   const [files, setFiles] = useState<FileData[]>([]);
   const [projectName, setProjectName] = useState('');
@@ -60,6 +256,7 @@ export default function VibeToolkit() {
   const [customGroqApiKey, setCustomGroqApiKey] = useState('');
   const [provider, setProvider] = useState<'gemini' | 'groq'>('gemini');
   const [showSettings, setShowSettings] = useState(false);
+  const [showRepoView, setShowRepoView] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load custom API Keys and provider from localStorage on mount
@@ -210,15 +407,24 @@ export default function VibeToolkit() {
     setProjectName('');
   };
 
+  const downloadToolkitZip = async () => {
+    const zip = new JSZip();
+    TOOLKIT_FILES.forEach(file => {
+      zip.file(file.name, file.content);
+    });
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, 'VibeToolkit-main.zip');
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8 font-sans text-zinc-100">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b-2 border-white pb-6">
         <div>
-          <h1 className="text-6xl font-black tracking-tighter uppercase leading-none text-white">
-            Vibe<span className="text-emerald-400">Toolkit</span>
+          <h1 className="text-6xl font-serif tracking-tighter leading-none text-white">
+            VibeToolkit
           </h1>
-          <p className="mt-2 text-zinc-500 font-mono text-sm uppercase tracking-widest">
+          <p className="mt-2 text-zinc-500 font-serif text-sm uppercase tracking-widest">
             Contextualizador de Projetos para IA v1.0
           </p>
         </div>
@@ -317,14 +523,14 @@ export default function VibeToolkit() {
             </AnimatePresence>
           </div>
 
-          <a 
-            href="https://github.com/SandroBreaker/VibeToolkit/archive/refs/heads/main.zip"
+          <button 
+            onClick={() => setShowRepoView(true)}
             className="px-6 py-3 border-2 border-white font-bold hover:bg-zinc-900 transition-all flex items-center gap-2 text-sm uppercase tracking-tighter"
             title="Baixar para rodar local"
           >
             <Download className="w-5 h-5" />
             <span className="hidden sm:inline">Baixar Local</span>
-          </a>
+          </button>
 
           {!blueprint ? (
             <button 
@@ -588,6 +794,130 @@ export default function VibeToolkit() {
           </div>
         </div>
       )}
+      <AnimatePresence>
+        {showRepoView && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="w-full max-w-5xl bg-[#0d1117] border border-[#30363d] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] rounded-xl"
+            >
+              {/* GitHub Style Header */}
+              <div className="bg-[#161b22] border-b border-[#30363d] p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[#21262d] rounded-md border border-[#30363d]">
+                    <FolderOpen className="w-5 h-5 text-[#8b949e]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-[#58a6ff] hover:underline cursor-pointer font-medium">SandroBreaker</span>
+                      <span className="text-[#8b949e]">/</span>
+                      <span className="font-semibold text-[#c9d1d9] hover:underline cursor-pointer">VibeToolkit</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="px-2 py-0.5 text-[#8b949e] text-[12px] font-medium rounded-full border border-[#30363d]">Public</span>
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowRepoView(false)}
+                  className="p-2 hover:bg-[#30363d] rounded-md transition-colors text-[#8b949e]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Repo Content */}
+              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[#0d1117]">
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 text-sm text-[#8b949e] bg-[#21262d] px-3 py-1.5 rounded-md border border-[#30363d] cursor-pointer hover:bg-[#30363d]">
+                      <span className="font-semibold text-[#c9d1d9]">main</span>
+                      <ChevronRight className="w-3 h-3 rotate-90" />
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-[#8b949e]">
+                      <div className="flex items-center gap-1 hover:text-[#58a6ff] cursor-pointer">
+                        <span className="font-semibold text-[#c9d1d9]">1</span>
+                        <span>branches</span>
+                      </div>
+                      <div className="flex items-center gap-1 hover:text-[#58a6ff] cursor-pointer">
+                        <span className="font-semibold text-[#c9d1d9]">1</span>
+                        <span>tags</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={downloadToolkitZip}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white font-semibold rounded-md transition-all text-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    DOWNLOAD ZIP
+                  </button>
+                </div>
+
+                {/* File List */}
+                <div className="border border-[#30363d] rounded-md overflow-hidden">
+                  <div className="bg-[#161b22] px-4 py-3 border-b border-[#30363d] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full bg-[#238636] flex items-center justify-center text-[10px] font-bold text-white">S</div>
+                      <span className="text-sm text-[#c9d1d9]">
+                        <span className="font-semibold hover:text-[#58a6ff] cursor-pointer">SandroBreaker</span>
+                        <span className="ml-2 text-[#8b949e]">Initial release of VibeToolkit</span>
+                      </span>
+                    </div>
+                    <span className="text-xs text-[#8b949e]">agora</span>
+                  </div>
+                  
+                  <div className="divide-y divide-[#30363d]">
+                    {TOOLKIT_FILES.map((file) => (
+                      <div key={file.name} className="flex items-center justify-between px-4 py-2.5 hover:bg-[#161b22] transition-colors group">
+                        <div className="flex items-center gap-3">
+                          {file.name.endsWith('.ps1') ? (
+                            <Terminal className="w-4 h-4 text-[#8b949e]" />
+                          ) : (
+                            <FileCode className="w-4 h-4 text-[#8b949e]" />
+                          )}
+                          <span className="text-sm text-[#c9d1d9] hover:text-[#58a6ff] hover:underline cursor-pointer">{file.name}</span>
+                        </div>
+                        <span className="text-sm text-[#8b949e] hidden sm:inline">Initial commit</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* README Preview */}
+                <div className="mt-8 border border-[#30363d] rounded-md overflow-hidden bg-[#0d1117]">
+                  <div className="bg-[#161b22] px-4 py-3 border-b border-[#30363d] flex items-center gap-2">
+                    <FileCode className="w-4 h-4 text-[#8b949e]" />
+                    <span className="text-xs font-bold text-[#c9d1d9] uppercase tracking-widest">README.md</span>
+                  </div>
+                  <div className="p-8 prose prose-invert prose-sm max-w-none prose-headings:border-b prose-headings:border-[#30363d] prose-headings:pb-2">
+                    <ReactMarkdown>
+                      {TOOLKIT_FILES.find(f => f.name === 'README.md')?.content || ''}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#161b22] border-t border-[#30363d] p-4 flex justify-end">
+                <button 
+                  onClick={() => setShowRepoView(false)}
+                  className="px-4 py-2 text-xs font-bold uppercase text-[#8b949e] hover:text-[#c9d1d9] transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
